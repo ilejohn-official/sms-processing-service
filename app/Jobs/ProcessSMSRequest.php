@@ -18,6 +18,16 @@ class ProcessSMSRequest implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     /**
+     * Number of retry attempts on failure
+     */
+    public $tries = 3; 
+
+    /**
+     * Timeout for the job
+     */
+    public $timeout = 60;
+
+    /**
      * Create a new job instance.
      */
     public function __construct(protected SmsRequest $smsRequest)
@@ -90,6 +100,9 @@ class ProcessSMSRequest implements ShouldQueue
      */
     private function sendMockSms()
     {
+         // Log the start of the SMS processing
+         Log::info("Processing SMS request for phone number: {$this->smsRequest->phone_number}");
+         
         try {
             // Simulate a mock API call to an ISP's SMS delivery service
             $response = Http::post('https://mock-isp-api.com/send', [
