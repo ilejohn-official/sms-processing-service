@@ -20,7 +20,7 @@ class TransactionController extends Controller
         ]);
 
         try {
-            // Calculate the profit (3% commission rate)
+            // Calculate the profit
             $profit = Transaction::calculateProfit($validatedData['amount']);
 
             // Create and save the transaction
