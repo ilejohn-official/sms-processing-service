@@ -34,7 +34,8 @@ return [
     'sqs' => [
         'key' => env('AWS_ACCESS_KEY_ID'),
         'secret' => env('AWS_SECRET_ACCESS_KEY'),
-        'region' => env('AWS_DEFAULT_REGION', 'us-east-1')
+        'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
+        'sqs_queue_url' => env('AWS_SQS_QUEUE_URL')
     ],
 
 ];
