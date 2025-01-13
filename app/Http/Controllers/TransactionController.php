@@ -2,10 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Transaction;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Log;
+use App\Events\TransactionSuccessEvent;
 
 class TransactionController extends Controller
 {
@@ -14,31 +13,12 @@ class TransactionController extends Controller
      */
     public function handleTransactionSuccess(Request $request): JsonResponse
     {
-        // Validate incoming request
-        $validatedData = $request->validate([
-            'amount' => 'required|numeric|min:0',
+        $transactionData = $request->validate([
+            'amount' => 'required|numeric|min:0'
         ]);
 
-        try {
-            // Calculate the profit
-            $profit = Transaction::calculateProfit($validatedData['amount']);
+        event(new TransactionSuccessEvent($transactionData));
 
-            // Create and save the transaction
-            $transaction = Transaction::create([
-                'amount' => $validatedData['amount'],
-                'profit' => $profit,
-            ]);
-
-            return response()->json([
-                'message' => 'Transaction processed successfully.',
-                'transaction_id' => $transaction->id,
-            ], 201);
-        } catch (\Exception $e) {
-            Log::error('Transaction processing failed: ' . $e->getMessage());
-
-            return response()->json([
-                'message' => 'Transaction processing failed.',
-            ], 500);
-        }
+        return response()->json(['message' => 'Transaction is being processed.'], 202);
     }
 }
