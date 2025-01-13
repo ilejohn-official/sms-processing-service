@@ -25,29 +25,34 @@ Service for SMS Processing with AWS SQS and AWS SNS Integration
   cd sms-processing-service
   ```
 
-  ``` composer install
+  ```bash
+  composer install
   ```
 
 - Copy and paste the content of the .env.example file into a new file named .env in the same directory as the former and set it's values based on your environment's configuration.
 
 - Generate Application Key
 
-  ``` php artisan key:generate
+  ```bash
+   php artisan key:generate
   ```
 
 - Run Migration
 
-  ``` php artisan migrate
+  ```bash
+  php artisan migrate
   ```
 
 - Ensure the php redis extension is installed and that redis is running
 
-  ``` sudo apt-get install php-redis
+  ```bash
+   sudo apt-get install php-redis
   ```
 
 - Ensure AWS is set up correctly with correct credentials
 
-``` AWS_ACCESS_KEY_ID=
+```bash
+    AWS_ACCESS_KEY_ID=
     AWS_SECRET_ACCESS_KEY=
     AWS_DEFAULT_REGION=us-east-1
     AWS_BUCKET=
@@ -59,17 +64,20 @@ Service for SMS Processing with AWS SQS and AWS SNS Integration
 
 - To run local server
 
-  ``` php artisan serve
+  ```bash
+   php artisan serve
   ```
 
 - To run queue server
 
-  ``` php artisan queue:work
+  ```bash
+  php artisan queue:work
   ```
 
 - Run the polling command after AWS must have been correctly configured for the sms request processing
 
-  ``` php artisan app:sqs-poll
+  ```bash
+  php artisan app:sqs-poll
   ```
 
 ## Endpoints
