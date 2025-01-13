@@ -20,7 +20,7 @@ class ProcessSMSRequest implements ShouldQueue
     /**
      * Number of retry attempts on failure
      */
-    public $tries = 3; 
+    public $tries = 1; 
 
     /**
      * Timeout for the job
@@ -40,34 +40,18 @@ class ProcessSMSRequest implements ShouldQueue
      */
     public function handle(): void
     {
-        // Validate SMS request message and phone number
-        $validator = Validator::make(
-            ['message' => $this->smsRequest->message, 'phone_number' => $this->smsRequest->phone_number],
-            [
-                'message' => 'required|string|min:1',
-                'phone_number' => 'required|string|regex:/^\+?[1-9]\d{1,14}$/', // Simple regex for international phone numbers
-            ]
-        );
-
-        if ($validator->fails()) {
-            Log::error('Invalid SMS request', [
-                'errors' => $validator->errors(),
-                'sms_request_id' => $this->smsRequest->id,
-            ]);
-
-            return; // Skip invalid request
+        // Skip invalid request
+        if (! $this->isValidInput()){
+            return;
         }
 
-        // Check if the phone number has already been notified
-        if (SmsRequest::where('phone_number', $this->smsRequest->phone_number)
-            ->where('status', SMSStatus::DELIVERED->value)
-            ->exists()) {
+        // Stop processing if it's a duplicate
+        if ($this->isDuplicateRequest()) {
             Log::info('Duplicate SMS request skipped', [
                 'phone_number' => $this->smsRequest->phone_number,
                 'sms_request_id' => $this->smsRequest->id,
             ]);
-
-            return; // Avoid duplicate notifications
+            return;
         }
 
         // Send a mock SMS API request (simulating ISP delivery)
@@ -102,10 +86,17 @@ class ProcessSMSRequest implements ShouldQueue
     {
          // Log the start of the SMS processing
          Log::info("Processing SMS request for phone number: {$this->smsRequest->phone_number}");
-         
+
+         //Mock code for testing process. Real code will replace the api
+         Http::fake([
+            'https://mock-isp.com/sms' => Http::response(['status' => 'success'], 200),
+            
+            // 'https://mock-isp.com/sms' => Http::response(['status' => 'failure'], 500),
+        ]);
+
         try {
             // Simulate a mock API call to an ISP's SMS delivery service
-            $response = Http::post('https://mock-isp-api.com/send', [
+            $response = Http::post('https://mock-isp.com/sms', [
                 'phone_number' => $this->smsRequest->phone_number,
                 'message' => $this->smsRequest->message,
             ]);
@@ -125,5 +116,48 @@ class ProcessSMSRequest implements ShouldQueue
 
             return ['status' => 'failed', 'message' => $e->getMessage()];
         }
+    }
+
+    /**
+     * 
+     * Validate input
+     * 
+     * @return bool
+     */
+    private function isValidInput(): bool
+    {
+        $validator = Validator::make(
+            ['message' => $this->smsRequest->message, 'phone_number' => $this->smsRequest->phone_number],
+            [
+                'message' => 'required|string|min:1',
+                'phone_number' => 'required|string|regex:/^\+?[1-9]\d{1,14}$/',
+            ]
+        );
+
+        if ($validator->fails()) {
+            Log::error('Invalid SMS request', [
+                'errors' => $validator->errors(),
+                'sms_request_id' => $this->smsRequest->id,
+            ]);
+
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Check if the SMS request is a duplicate.
+     *
+     * @return bool
+     */
+    private function isDuplicateRequest(): bool
+    {
+        return SmsRequest::withStatus(SMSStatus::DELIVERED)
+            ->where([
+                'phone_number' => $this->smsRequest->phone_number,
+                'message' => $this->smsRequest->message
+            ])
+            ->exists();
     }
 }
