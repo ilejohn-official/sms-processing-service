@@ -11,6 +11,8 @@ class SMSRequest extends Model
 {
     use HasFactory;
 
+    protected $table = 'sms_requests';
+
     /**
      * The attributes that are mass assignable.
      *
