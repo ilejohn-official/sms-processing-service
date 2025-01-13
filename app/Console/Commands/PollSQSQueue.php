@@ -24,7 +24,9 @@ class PollSQSQueue extends Command
      */
     protected $description = 'Poll AWS SQS queue for SMS requests and process them';
 
-    private $sqsClient;
+    protected $sqsClient;
+
+    protected $queueUrl;
 
     public function __construct()
     {
@@ -38,6 +40,8 @@ class PollSQSQueue extends Command
                 'secret' => config('services.sqs.secret'),
             ],
         ]);
+
+        $this->queueUrl = config('services.sqs.sqs_queue_url');
     }
 
     /**
@@ -49,19 +53,19 @@ class PollSQSQueue extends Command
             try {
                 // Receive messages from the queue
                 $result = $this->sqsClient->receiveMessage([
-                    'QueueUrl' => config('services.aws.sqs_queue_url'),
+                    'QueueUrl' => $this->queueUrl,
                     'MaxNumberOfMessages' => 10,
                     'WaitTimeSeconds' => 20,
                 ]);
 
+                // No messages, continue polling
                 if (empty($result->get('Messages'))) {
-                    continue; // No messages, continue polling
+                    continue; 
                 }
 
                 foreach ($result->get('Messages') as $message) {
                     $this->info("Processing SMS request: {$message['MessageId']}");
 
-                    // Assume message body is in JSON format
                     $smsData = json_decode($message['Body'], true);
 
                     // Create a new SmsRequest and dispatch job
@@ -74,7 +78,7 @@ class PollSQSQueue extends Command
 
                     // Delete the message from the queue after processing
                     $this->sqsClient->deleteMessage([
-                        'QueueUrl' => config('services.aws.sqs_queue_url'),
+                        'QueueUrl' => $this->queueUrl,
                         'ReceiptHandle' => $message['ReceiptHandle'],
                     ]);
                 }
